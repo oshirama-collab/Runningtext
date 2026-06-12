@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Running Text"/>
+<meta name="application-name" content="Running Text"/>
+<meta name="theme-color" content="#0f0f0f"/>
+<meta name="description" content="Aplikasi Running Text — atur warna, font, kecepatan. Bisa diinstall di Android."/>
+<title>Running Text</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@900&family=Oswald:wght@700&family=Bebas+Neue&family=Righteous&family=Russo+One&family=Squada+One&family=Teko:wght@700&family=Permanent+Marker&display=swap" rel="stylesheet"/>
+
+<!-- PWA manifest injected dynamically below via JS -->
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --acc:#f0b429;
+  --panel:#161616;
+  --border:#252525;
+  --ui:#0f0f0f;
+}
+html,body{
+  width:100%;height:100%;
+  overflow-x:hidden;
+  background:#0a0a0a;
+  color:#ddd;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.app{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:28px}
+
+/* ── topbar ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;
+  background:var(--ui);
+  border-bottom:1px solid #1c1c1c;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-title{font-size:.95rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.badge-live{font-size:.6rem;background:var(--acc);color:#111;padding:2px 8px;border-radius:20px;font-weight:800;letter-spacing:.06em}
+.btn-install{
+  display:none; /* shown when prompt available */
+  font-size:.7rem;font-weight:700;letter-spacing:.05em;
+  background:#1e3a1e;color:#4ade80;
+  border:1px solid #2d5a2d;border-radius:20px;
+  padding:4px 12px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-install.visible{display:block}
+
+/* ── stage ── */
+.stage-wrap{margin:14px 14px 0;border-radius:10px;overflow:hidden;border:1.5px solid #252525;position:relative}
+.stage{width:100%;height:96px;display:flex;align-items:center;overflow:hidden;position:relative;background:#000}
+.stage-label{position:absolute;top:5px;right:8px;font-size:.52rem;color:#2a2a2a;letter-spacing:.1em;text-transform:uppercase;pointer-events:none;z-index:2}
+
+/* ── ticker ── */
+.ticker-track{display:flex;align-items:center;white-space:nowrap;position:absolute;left:0;will-change:transform}
+.ticker-span{
+  white-space:nowrap;font-weight:900;
+  font-family:'Anton','Arial Black',sans-serif;
+  color:#ffff00;
+  padding-right:1ch;
+  letter-spacing:.03em;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── panel ── */
+.panel{margin:12px 14px 0;background:var(--panel);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.sec-head{padding:9px 16px 7px;font-size:.62rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#444;border-bottom:1px solid #1d1d1d;background:#111}
+.ctrl-row{display:flex;align-items:center;padding:11px 16px;gap:10px;border-bottom:1px solid #1d1d1d}
+.ctrl-row:last-child{border-bottom:none}
+.ctrl-row.col{flex-direction:column;align-items:flex-start;gap:7px;padding-bottom:14px}
+.lbl{font-size:.7rem;font-weight:600;color:#666;min-width:70px;letter-spacing:.04em}
+.ctrl{flex:1;display:flex;align-items:center;gap:8px;width:100%}
+
+textarea{
+  width:100%;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;
+  color:#fff;font-size:.88rem;padding:9px 12px;font-family:inherit;
+  resize:none;min-height:58px;outline:none;line-height:1.4;
+}
+textarea:focus{border-color:#3a3a3a}
+
+input[type=range]{
+  flex:1;-webkit-appearance:none;appearance:none;
+  height:4px;background:#282828;border-radius:4px;outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;
+  background:var(--acc);border-radius:50%;cursor:pointer;
+  box-shadow:0 0 0 3px rgba(240,180,41,.18);
+}
+.val{min-width:50px;text-align:right;font-size:.76rem;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+
+input[type=color]{width:36px;height:32px;border:none;border-radius:7px;cursor:pointer;background:transparent;padding:2px}
+
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:transform .15s,border-color .15s}
+.dot:active{transform:scale(1.3);border-color:#fff}
+
+select{
+  flex:1;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;
+  color:#fff;font-size:.82rem;padding:7px 9px;outline:none;cursor:pointer;
+}
+
+/* ── buttons ── */
+.btn-grid{margin:12px 14px 0;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.btn{
+  padding:13px 8px;border:none;border-radius:10px;
+  font-size:.8rem;font-weight:700;letter-spacing:.04em;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:opacity .15s,transform .1s;-webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:scale(.95);opacity:.8}
+.btn-apply{background:var(--acc);color:#111;grid-column:1/-1}
+.btn-pause{background:#1e1e1e;color:#eee;border:1px solid #2e2e2e}
+.btn-full {background:#1a3a1a;color:#4ade80;border:1px solid #2d5a2d}
+.btn-reset{background:#2a1010;color:#f87171;border:1px solid #4a2020}
+
+/* ── fullscreen overlay ── */
+#fsOverlay{display:none;position:fixed;inset:0;z-index:9999;background:#000;overflow:hidden}
+#fsOverlay.active{display:block}
+#fsTicker{width:100%;height:100%;display:flex;align-items:center;overflow:hidden;position:relative}
+#fsTrack{display:flex;align-items:center;white-space:nowrap;position:absolute;left:0;will-change:transform}
+.fs-span{white-space:nowrap;font-weight:900;font-family:'Anton','Arial Black',sans-serif;color:#ffff00;padding-right:1ch;letter-spacing:.03em;-webkit-font-smoothing:antialiased}
+#fsHint{position:fixed;bottom:14px;right:16px;font-size:.62rem;color:#222;letter-spacing:.08em;z-index:10000;pointer-events:none;transition:opacity 1s}
+
+/* ── install banner ── */
+#installBanner{
+  display:none;
+  margin:12px 14px 0;
+  background:#0d2a0d;
+  border:1px solid #2d5a2d;
+  border-radius:12px;
+  padding:13px 16px;
+  align-items:center;
+  gap:12px;
+}
+#installBanner.show{display:flex}
+#installBanner p{flex:1;font-size:.8rem;color:#aaffaa;line-height:1.4}
+#installBanner p strong{color:#4ade80;display:block;margin-bottom:2px}
+#iBannerBtn{
+  white-space:nowrap;font-size:.78rem;font-weight:700;
+  background:#4ade80;color:#0a2a0a;
+  border:none;border-radius:8px;padding:9px 14px;cursor:pointer;
+  flex-shrink:0;
+}
+#iBannerDismiss{font-size:.7rem;color:#2d5a2d;cursor:pointer;padding:4px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <span class="topbar-title">⚡ Running Text</span>
+    <div class="topbar-right">
+      <button class="btn-install" id="topInstallBtn">⬇ Install</button>
+      <span class="badge-live">LIVE</span>
+    </div>
+  </div>
+
+  <!-- Install banner -->
+  <div id="installBanner">
+    <p><strong>📲 Install ke Android</strong>Tambahkan ke layar utama untuk akses offline & pengalaman penuh.</p>
+    <button id="iBannerBtn">Install</button>
+    <span id="iBannerDismiss">✕</span>
+  </div>
+
+  <!-- Preview stage -->
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div class="ticker-track" id="track">
+        <span class="ticker-span" id="ts1"> isi disini.</span>
+      </div>
+    </div>
+    <div class="stage-label">PREVIEW</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="sec-head">Teks</div>
+    <div class="ctrl-row col">
+      <div class="lbl">Isi Teks</div>
+      <textarea id="inputText" rows="2">Selamat Datang! Ini adalah Running Text Generator.</textarea>
+    </div>
+    <div class="ctrl-row">
+      <div class="lbl">Ukuran</div>
+      <div class="ctrl">
+        <select id="fontSize">
+          <option value="20">Mini — 20px</option>
+          <option value="28">XS — 28px</option>
+          <option value="36">Kecil — 36px</option>
+          <option value="48">Sedang — 48px</option>
+          <option value="64" selected>Besar — 64px</option>
+          <option value="80">XL — 80px</option>
+          <option value="100">Jumbo — 100px</option>
+          <option value="120">XXL — 120px</option>
+          <option value="150">Super — 150px</option>
+          <option value="200">Mega — 200px</option>
+          <option value="280">Ultra — 280px</option>
+        </select>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="lbl">Font</div>
+      <div class="ctrl">
+        <select id="fontFamily">
+          <optgroup label="── Display ──">
+            <option value="'Anton','Arial Black',sans-serif" selected>Anton — Bold</option>
+            <option value="'Bebas Neue',sans-serif">Bebas Neue</option>
+            <option value="'Oswald',sans-serif">Oswald</option>
+            <option value="'Barlow Condensed',sans-serif">Barlow Condensed</option>
+            <option value="'Teko',sans-serif">Teko</option>
+            <option value="'Squada One',sans-serif">Squada One</option>
+            <option value="'Russo One',sans-serif">Russo One</option>
+            <option value="'Righteous',sans-serif">Righteous</option>
+          </optgroup>
+          <optgroup label="── Sans-Serif ──">
+            <option value="'Arial Black',Arial,sans-serif">Arial Black</option>
+            <option value="Arial,sans-serif">Arial</option>
+            <option value="Impact,sans-serif">Impact</option>
+            <option value="Verdana,sans-serif">Verdana</option>
+          </optgroup>
+          <optgroup label="── Serif ──">
+            <option value="Georgia,serif">Georgia</option>
+            <option value="'Times New Roman',serif">Times New Roman</option>
+          </optgroup>
+          <optgroup label="── Mono ──">
+            <option value="'Courier New',monospace">Courier New</option>
+          </optgroup>
+          <optgroup label="── Dekoratif ──">
+            <option value="'Permanent Marker',cursive">Permanent Marker</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="lbl">Kecepatan</div>
+      <div class="ctrl">
+        <input type="range" id="speed" min="30" max="600" value="130" step="5"/>
+        <span class="val" id="speedBadge">130</span>
+      </div>
+    </div>
+
+    <div class="sec-head">Warna</div>
+    <div class="ctrl-row">
+      <div class="lbl">Teks</div>
+      <div class="ctrl" style="flex-wrap:wrap">
+        <input type="color" id="txtColor" value="#ffff00"/>
+        <div class="dots">
+          <div class="dot" style="background:#ffff00" data-t="txtColor" data-c="#ffff00"></div>
+          <div class="dot" style="background:#ff3333" data-t="txtColor" data-c="#ff3333"></div>
+          <div class="dot" style="background:#33ff88" data-t="txtColor" data-c="#33ff88"></div>
+          <div class="dot" style="background:#33aaff" data-t="txtColor" data-c="#33aaff"></div>
+          <div class="dot" style="background:#ff88ff" data-t="txtColor" data-c="#ff88ff"></div>
+          <div class="dot" style="background:#ffffff;border-color:#444" data-t="txtColor" data-c="#ffffff"></div>
+          <div class="dot" style="background:#ff8800" data-t="txtColor" data-c="#ff8800"></div>
+          <div class="dot" style="background:#00ffff" data-t="txtColor" data-c="#00ffff"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="lbl">Latar</div>
+      <div class="ctrl" style="flex-wrap:wrap">
+        <input type="color" id="bgColor" value="#000000"/>
+        <div class="dots">
+          <div class="dot" style="background:#000000;border-color:#444" data-t="bgColor" data-c="#000000"></div>
+          <div class="dot" style="background:#0a0a30" data-t="bgColor" data-c="#0a0a30"></div>
+          <div class="dot" style="background:#0a200a" data-t="bgColor" data-c="#0a200a"></div>
+          <div class="dot" style="background:#200000" data-t="bgColor" data-c="#200000"></div>
+          <div class="dot" style="background:#1a1a1a;border-color:#444" data-t="bgColor" data-c="#1a1a1a"></div>
+          <div class="dot" style="background:#ffffff;border-color:#444" data-t="bgColor" data-c="#ffffff"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="btn-grid">
+    <button class="btn btn-apply" id="applyBtn">✓ Terapkan</button>
+    <button class="btn btn-pause" id="pauseBtn">⏸ Jeda</button>
+    <button class="btn btn-full"  id="fullBtn">⛶ Layar Penuh</button>
+    <button class="btn btn-reset" id="resetBtn">↺ Reset</button>
+  </div>
+
+</div><!-- .app -->
+
+<!-- Fullscreen overlay -->
+<div id="fsOverlay">
+  <div id="fsTicker">
+    <div id="fsTrack"><span class="fs-span" id="fss1"></span></div>
+  </div>
+  <div id="fsHint">Ketuk untuk keluar</div>
+</div>
+
+<script>
+/* ================================================================
+   PWA — Manifest + Service Worker (all inline, no server needed)
+================================================================ */
+
+/* 1. SVG icon → base64 data URL */
+const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0f0f0f"/>
+  <rect x="40" y="180" width="432" height="152" rx="18" fill="#111"/>
+  <text x="256" y="288" font-family="Arial Black,sans-serif" font-weight="900"
+        font-size="110" fill="#ffff00" text-anchor="middle" letter-spacing="2">RTX</text>
+  <rect x="40" y="360" width="260" height="12" rx="6" fill="#f0b429" opacity=".7"/>
+</svg>`;
+const iconB64 = 'data:image/svg+xml;base64,' + btoa(iconSvg);
+
+/* 2. Inject Web App Manifest */
+const manifest = {
+  name: 'Running Text Generator',
+  short_name: 'Running Text',
+  description: 'Buat running text dengan warna & kecepatan custom. Bisa diinstall di Android.',
+  start_url: './',
+  display: 'standalone',
+  orientation: 'any',
+  background_color: '#0a0a0a',
+  theme_color: '#0f0f0f',
+  icons: [
+    { src: iconB64, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+    { src: iconB64, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+  ]
+};
+const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+const manifestURL  = URL.createObjectURL(manifestBlob);
+const linkEl = document.createElement('link');
+linkEl.rel  = 'manifest';
+linkEl.href = manifestURL;
+document.head.appendChild(linkEl);
+
+/* Apple touch icon */
+const appleIcon = document.createElement('link');
+appleIcon.rel  = 'apple-touch-icon';
+appleIcon.href = iconB64;
+document.head.appendChild(appleIcon);
+
+/* 3. Service Worker inline via Blob */
+const swCode = `
+const CACHE = 'rtx-v1';
+const ASSETS = [self.location.href.replace('/sw-blob','')];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request)))
+  );
+});
+`;
+const swBlob = new Blob([swCode], {type:'text/javascript'});
+const swURL  = URL.createObjectURL(swBlob);
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register(swURL).catch(()=>{});
+}
+
+/* ================================================================
+   PWA Install prompt
+================================================================ */
+let deferredPrompt = null;
+const topBtn     = document.getElementById('topInstallBtn');
+const banner     = document.getElementById('installBanner');
+const iBannerBtn = document.getElementById('iBannerBtn');
+const iDismiss   = document.getElementById('iBannerDismiss');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  topBtn.classList.add('visible');
+  banner.classList.add('show');
+});
+
+async function triggerInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  topBtn.classList.remove('visible');
+  banner.classList.remove('show');
+}
+
+topBtn.addEventListener('click', triggerInstall);
+iBannerBtn.addEventListener('click', triggerInstall);
+iDismiss.addEventListener('click', () => banner.classList.remove('show'));
+
+window.addEventListener('appinstalled', () => {
+  topBtn.classList.remove('visible');
+  banner.classList.remove('show');
+});
+
+/* ================================================================
+   STATE
+================================================================ */
+let cfg = {
+  text   : 'Selamat Datang! Ini adalah Running Text Generator.',
+  speed  : 130,
+  fs     : 64,
+  font   : "'Anton','Arial Black',sans-serif",
+  txtClr : '#ffff00',
+  bgClr  : '#000000',
+};
+let paused   = false;
+
+/* preview */
+let mainRaf  = null, mainLast = null, mainOff = 0, mainTW = 0, mainSW = 0;
+/* fullscreen */
+let fsActive = false, fsRaf = null, fsLast = null, fsOff = 0, fsTW = 0, fsSW = 0, fsSH = 0;
+
+const stage    = document.getElementById('stage');
+const track    = document.getElementById('track');
+const ts1      = document.getElementById('ts1');
+const fsOver   = document.getElementById('fsOverlay');
+const fsTicker = document.getElementById('fsTicker');
+const fsTrack  = document.getElementById('fsTrack');
+const fss1     = document.getElementById('fss1');
+const fsHint   = document.getElementById('fsHint');
+
+/* ================================================================
+   SEAMLESS TICKER — two spans side-by-side, modulo offset
+================================================================ */
+function getTs2(){ return track.children[1]; }
+function getFss2(){ return fsTrack.children[1]; }
+
+function applyMain(){
+  const fs2 = Math.round(cfg.fs * 0.55) + 'px';
+  let ts2 = getTs2();
+  [ts1, ts2].forEach(el => {
+    if(!el) return;
+    el.textContent      = cfg.text;
+    el.style.color      = cfg.txtClr;
+    el.style.fontSize   = fs2;
+    el.style.fontFamily = cfg.font;
+  });
+  stage.style.background = cfg.bgClr;
+  requestAnimationFrame(() => { mainTW = ts1.offsetWidth; mainSW = stage.offsetWidth; });
+}
+
+function mainTick(now){
+  if(!paused){
+    if(mainLast === null) mainLast = now;
+    const dt = (now - mainLast) / 1000;
+    mainLast = now;
+    mainOff += cfg.speed * dt;
+    if(mainTW > 0) mainOff %= mainTW;
+    track.style.transform = `translateX(${-mainOff}px)`;
+  } else { mainLast = null; }
+  mainRaf = requestAnimationFrame(mainTick);
+}
+
+function startMain(){
+  if(!getTs2()){
+    const c = ts1.cloneNode(true); c.id = 'ts2'; track.appendChild(c);
+  }
+  applyMain();
+  if(mainRaf) cancelAnimationFrame(mainRaf);
+  mainLast = null; mainOff = 0;
+  mainRaf = requestAnimationFrame(mainTick);
+}
+
+/* fullscreen */
+function calcFsFont(){
+  return Math.min(Math.max(cfg.fs, 40), Math.round((fsSH || window.innerHeight) * 0.7));
+}
+
+function applyFs(){
+  const fs = calcFsFont() + 'px';
+  let fss2 = getFss2();
+  [fss1, fss2].forEach(el => {
+    if(!el) return;
+    el.textContent      = cfg.text;
+    el.style.color      = cfg.txtClr;
+    el.style.fontSize   = fs;
+    el.style.fontFamily = cfg.font;
+  });
+  fsTicker.style.background = cfg.bgClr;
+  fsOver.style.background   = cfg.bgClr;
+  requestAnimationFrame(() => { fsTW = fss1.offsetWidth; fsSW = window.innerWidth; fsSH = window.innerHeight; });
+}
+
+function fsTick(now){
+  if(!paused){
+    if(fsLast === null) fsLast = now;
+    const dt = (now - fsLast) / 1000;
+    fsLast = now;
+    fsOff += cfg.speed * dt;
+    if(fsTW > 0) fsOff %= fsTW;
+    fsTrack.style.transform = `translateX(${-fsOff}px)`;
+  } else { fsLast = null; }
+  fsRaf = requestAnimationFrame(fsTick);
+}
+
+function startFs(){
+  if(!getFss2()){
+    const c = fss1.cloneNode(true); c.id = 'fss2'; fsTrack.appendChild(c);
+  }
+  fsSW = window.innerWidth; fsSH = window.innerHeight;
+  applyFs();
+  if(fsRaf) cancelAnimationFrame(fsRaf);
+  fsLast = null; fsOff = 0;
+  fsRaf = requestAnimationFrame(fsTick);
+}
+
+function stopFs(){ if(fsRaf){ cancelAnimationFrame(fsRaf); fsRaf = null; } }
+
+/* ================================================================
+   FULLSCREEN OPEN / CLOSE
+================================================================ */
+async function openFullscreen(){
+  try{
+    const el = document.documentElement;
+    if(el.requestFullscreen)            await el.requestFullscreen();
+    else if(el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+  }catch(e){}
+  try{
+    const so = screen.orientation;
+    if(so && so.lock) await so.lock('landscape').catch(()=>{});
+  }catch(e){}
+  fsOver.classList.add('active');
+  fsActive = true;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    fsSW = window.innerWidth; fsSH = window.innerHeight; startFs();
+  }));
+  fsHint.style.opacity = '1';
+  setTimeout(() => { fsHint.style.opacity = '0'; }, 3000);
+}
+
+async function closeFullscreen(){
+  fsOver.classList.remove('active');
+  stopFs(); fsActive = false;
+  try{ const so = screen.orientation; if(so && so.unlock) so.unlock(); }catch(e){}
+  try{
+    if(document.exitFullscreen)            await document.exitFullscreen();
+    else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
+  }catch(e){}
+}
+
+fsOver.addEventListener('click', closeFullscreen);
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && fsActive) closeFullscreen(); });
+
+window.addEventListener('resize', () => {
+  mainSW = stage.offsetWidth;
+  if(fsActive){ fsSW = window.innerWidth; fsSH = window.innerHeight; applyFs(); }
+});
+
+/* ================================================================
+   CONTROL BINDINGS
+================================================================ */
+document.getElementById('speed').addEventListener('input', function(){
+  cfg.speed = +this.value;
+  document.getElementById('speedBadge').textContent = this.value;
+});
+document.getElementById('fontSize').addEventListener('change', function(){ cfg.fs = +this.value; });
+document.getElementById('fontFamily').addEventListener('change', function(){ cfg.font = this.value; });
+document.getElementById('txtColor').addEventListener('input', function(){ cfg.txtClr = this.value; });
+document.getElementById('bgColor').addEventListener('input', function(){ cfg.bgClr = this.value; });
+
+document.querySelectorAll('.dot').forEach(d => {
+  d.addEventListener('click', () => {
+    document.getElementById(d.dataset.t).value = d.dataset.c;
+    if(d.dataset.t === 'txtColor') cfg.txtClr = d.dataset.c;
+    else cfg.bgClr = d.dataset.c;
+  });
+});
+
+document.getElementById('applyBtn').addEventListener('click', () => {
+  cfg.text   = document.getElementById('inputText').value.trim() || 'Running Text...';
+  cfg.speed  = +document.getElementById('speed').value;
+  cfg.fs     = +document.getElementById('fontSize').value;
+  cfg.font   = document.getElementById('fontFamily').value;
+  cfg.txtClr = document.getElementById('txtColor').value;
+  cfg.bgClr  = document.getElementById('bgColor').value;
+  applyMain(); mainOff = 0;
+  requestAnimationFrame(() => { mainTW = ts1.offsetWidth; mainSW = stage.offsetWidth; });
+  if(fsActive){ applyFs(); fsOff = 0; }
+});
+
+document.getElementById('pauseBtn').addEventListener('click', function(){
+  paused = !paused;
+  this.textContent = paused ? '▶ Lanjut' : '⏸ Jeda';
+  if(!paused){ mainLast = null; fsLast = null; }
+});
+
+document.getElementById('fullBtn').addEventListener('click', openFullscreen);
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  cfg = {
+    text:'Selamat Datang! Ini adalah Running Text Generator.',
+    speed:130, fs:64, font:"'Anton','Arial Black',sans-serif",
+    txtClr:'#ffff00', bgClr:'#000000',
+  };
+  document.getElementById('inputText').value        = cfg.text;
+  document.getElementById('speed').value            = cfg.speed;
+  document.getElementById('speedBadge').textContent = cfg.speed;
+  document.getElementById('fontSize').value         = cfg.fs;
+  document.getElementById('fontFamily').value       = cfg.font;
+  document.getElementById('txtColor').value         = cfg.txtClr;
+  document.getElementById('bgColor').value          = cfg.bgClr;
+  paused = false;
+  document.getElementById('pauseBtn').textContent = '⏸ Jeda';
+  applyMain(); mainOff = 0;
+});
+
+/* ── INIT ── */
+startMain();
+</script>
+</body>
+</html>
